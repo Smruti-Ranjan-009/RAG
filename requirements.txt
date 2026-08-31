@@ -1,0 +1,30 @@
+# LangChain
+langchain
+langchain-community
+langchain-core
+langchain-text-splitters
+
+# LangGraph
+langgraph
+
+# Vector Store
+chromadb
+langchain-chroma
+
+# Document loaders
+pypdf
+beautifulsoup4
+
+# Embeddings
+sentence-transformers
+langchain-huggingface
+
+# Environment variables
+python-dotenv
+
+# Jupyter
+jupyter
+ipykernel
+
+# Web requests
+requests
