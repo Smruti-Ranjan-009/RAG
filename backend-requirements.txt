@@ -1,4 +1,9 @@
 python-dotenv
+pydantic-settings
+
+# web framework
+fastapi
+uvicorn[standard]
 
 # orchestration
 langchain
@@ -23,6 +28,6 @@ requests
 # tokenization for chunk sizing
 tiktoken
 
-# jupyter
-jupyter
-ipykernel
+# testing
+pytest
+httpx
