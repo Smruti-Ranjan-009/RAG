@@ -26,3 +26,7 @@ tiktoken
 # jupyter
 jupyter
 ipykernel
+
+rank_bm25
+sentence-transformers
+pyyaml
