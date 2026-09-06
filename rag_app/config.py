@@ -29,8 +29,16 @@ class Settings(BaseSettings):
     chunk_size_tokens: int = 700  # midpoint of the 500-800 token target range
     chunk_overlap_tokens: int = 100
 
-    # --- Retrieval ---
-    retrieval_k: int = 5
+    # --- Retrieval (Phase-2: hybrid + re-ranking) ---
+    retrieval_k: int = 5  # legacy: used by any caller still doing plain vector search
+    bm25_k: int = 5
+    vector_k: int = 5
+    hybrid_weights: tuple[float, float] = (0.4, 0.6)  # (bm25, vector)
+    cross_encoder_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    rerank_top_n: int = 5
+
+    # --- Generation ---
+    prompt_version: str = "v2"  # see prompts.yaml; "v1" has no citation enforcement
 
     # --- Misc ---
     user_agent: str = "rag-phase1-app/1.0"

@@ -1,0 +1,51 @@
+name: Phase-3 RAG Evaluation
+
+# Runs the golden Q&A set through the live pipeline on every PR and fails the
+# build if mean faithfulness drops below the threshold, per RAG.md's Phase-3
+# spec. Needs a GROQ_API_KEY repo secret (Settings → Secrets and variables →
+# Actions) — used both to populate the vector store's answers and as ragas'
+# judge LLM for faithfulness scoring.
+#
+# Assumes data/ (source documents) is committed to the repo, since a fresh
+# CI checkout has no pre-existing chroma_db/ (that's gitignored) — the
+# "Ingest documents" step below rebuilds the vector store from data/ on
+# every run.
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}  # allows manually triggering a run from the Actions tab
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          pip install -e .
+          pip install -r backend-requirements.txt -r eval-requirements.txt
+
+      - name: Ingest documents into a fresh vector store
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: |
+          python -c "
+          from rag_app.config import settings
+          from rag_app.pipeline import run_ingest
+          result = run_ingest(settings, reset=True)
+          print(result)
+          assert result.chunks_stored > 0, 'Ingest produced 0 chunks — check that data/ is committed to the repo.'
+          "
+
+      - name: Run Phase-3 faithfulness evaluation
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: python eval/run_eval.py --threshold 0.7

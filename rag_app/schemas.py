@@ -27,13 +27,25 @@ class IngestResponse(BaseModel):
 class SourceChunk(BaseModel):
     source: str
     snippet: str = Field(description="First ~200 chars of the retrieved chunk, for UI display.")
+    rerank_score: float | None = Field(
+        default=None, description="Cross-encoder relevance score, if re-ranking ran."
+    )
 
 
 class QueryRequest(BaseModel):
     question: str
-    k: int | None = Field(default=None, description="Overrides the default retrieval_k for this query.")
+    k: int | None = Field(
+        default=None, description="Overrides both bm25_k and vector_k (pre-rerank candidate count) for this query."
+    )
 
 
 class QueryResponse(BaseModel):
     answer: str
     sources: list[SourceChunk]
+    accepted: bool = Field(
+        description="False if citation enforcement declined the answer (insufficient context or an "
+        "invalid citation) — in that case `answer` is the decline message, and `sources` is empty."
+    )
+    reason: str | None = Field(
+        default=None, description="Why enforcement declined, if accepted is False."
+    )

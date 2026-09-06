@@ -24,8 +24,9 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="RAG API",
-    description="Phase-1 retrieval-augmented generation service.",
-    version="0.1.0",
+    description="Phase-2 retrieval-augmented generation service — hybrid retrieval, "
+    "cross-encoder re-ranking, and citation enforcement.",
+    version="0.2.0",
 )
 
 app.add_middleware(

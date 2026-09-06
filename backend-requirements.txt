@@ -7,10 +7,18 @@ uvicorn[standard]
 
 # orchestration
 langchain
-langchain-community
+langchain-classic       # EnsembleRetriever lives here, not langchain.retrievers, in current langchain
+# pinned <0.4: ragas 0.3.x (Phase-3 eval) hard-imports a class langchain-community
+# 0.4.x removed; see https://github.com/vibrantlabsai/ragas/issues/2745 — this pin
+# keeps the API and the Phase-3 eval script running against the same environment.
+langchain-community<0.4
 langchain-groq
 langchain-huggingface
 langchain-chroma
+
+# hybrid retrieval (BM25) + re-ranking (cross-encoder) + versioned prompts
+rank_bm25
+pyyaml
 
 # vector store
 chromadb

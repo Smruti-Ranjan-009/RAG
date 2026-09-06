@@ -1,4 +1,4 @@
-# RAG API (Phase-1) — Backend
+# RAG API (Phase-1 + 2 + 3) — Backend
 
 The notebook pipeline, restructured as a FastAPI service so a React/Vite frontend
 (or anything else) can call it over HTTP instead of running cells by hand.
@@ -21,14 +21,22 @@ RAG/
 │   ├── chunking.py                # token-aware splitting
 │   ├── embeddings.py               # local embedding model (cached)
 │   ├── vectorstore.py               # Chroma open/add/reset
-│   ├── retrieval.py                  # top-K similarity search
-│   ├── generation.py                 # Groq LLM + cited-answer prompt
+│   ├── retrieval.py                  # hybrid (BM25 + vector) retrieval + cross-encoder re-ranking
+│   ├── generation.py                 # Groq LLM + versioned prompt + citation enforcement
 │   ├── pipeline.py                    # orchestrates the above; framework-agnostic
+│   ├── prompts.py                         # loads versioned templates from prompts.yaml
+│   ├── prompts.yaml                        # v1 (baseline) / v2 (citation-enforced) templates
 │   ├── schemas.py                      # request/response models (also = OpenAPI schema)
 │   └── main.py                          # FastAPI app: /ingest, /query, /health
 ├── tests/                      # pytest unit tests (no live API calls) — added by this drop-in
+├── eval/                       # Phase-3: golden Q&A set + offline faithfulness evaluation
+│   ├── golden_qa.json
+│   └── run_eval.py
+├── .github/workflows/
+│   └── eval.yml                # runs eval/run_eval.py on every PR, fails the build below threshold
 ├── backend-requirements.txt    # backend deps (FastAPI etc.) — kept separate from
 │                               # the notebook's requirements.txt on purpose
+├── eval-requirements.txt       # ragas, for running eval/run_eval.py
 ├── Dockerfile
 ├── .env.example
 ├── pyproject.toml              # makes `rag_app` pip-installable (pip install -e .)
@@ -100,23 +108,39 @@ as the working directory.
 
 ## API
 
-**POST /ingest** — load `data/` (+ any `web_urls`), chunk, embed, store.
+**POST /ingest** — load `data/` (+ any `web_urls`), chunk, embed, store. Also
+invalidates the cached BM25 index so hybrid retrieval sees the new chunks.
 ```json
 {"web_urls": ["https://en.wikipedia.org/wiki/Retrieval-augmented_generation"], "reset": false}
 ```
 
-**POST /query** — retrieve top-K chunks and generate a cited answer.
+**POST /query** — hybrid retrieval (BM25 + vector) → cross-encoder re-rank →
+generate → citation enforcement.
 ```json
 {"question": "What is this project about?", "k": 5}
 ```
+Response now includes `accepted` and `reason`:
+```json
+{
+  "answer": "...",
+  "sources": [{"source": "...", "snippet": "...", "rerank_score": 4.21}],
+  "accepted": true,
+  "reason": null
+}
+```
+`accepted: false` means citation enforcement declined the answer — either
+the model signaled `INSUFFICIENT_CONTEXT`, or it cited a chunk number that
+wasn't actually in the retrieved context (a hallucinated source). In that
+case `answer` is a decline message and `sources` is empty, not the raw
+(unverified) model output.
 
 ## Tests
 
 ```bash
 pytest
 ```
-Unit tests cover chunking, context formatting, and schema validation — no
-network calls, no Groq API key needed to run them.
+Covers chunking, context formatting, schema validation, citation enforcement,
+and versioned-prompt loading — no network calls, no Groq API key needed.
 
 ## Docker
 
@@ -130,6 +154,16 @@ docker run -p 8000:8000 --env-file .env -v $(pwd)/data:/app/data rag-api
 `data/` is mounted as a volume rather than baked into the image at build time
 — it's your knowledge base and changes independently of the code, so you
 don't need to rebuild the image every time you add a document.
+
+## A dependency pin worth knowing about
+
+`backend-requirements.txt` pins `langchain-community<0.4`. Newer releases
+removed a class that `ragas` (Phase-3's eval framework) still hard-imports at
+module load time — a known, currently-open upstream bug
+([ragas#2745](https://github.com/vibrantlabsai/ragas/issues/2745)), not
+something specific to this project. The pin keeps the API and the Phase-3
+eval script running against one consistent, working environment. If a future
+`ragas` release fixes this, the pin can be dropped.
 
 ## Add to your existing `.gitignore`
 
@@ -147,8 +181,65 @@ venv/
 ```
 (`.env` is presumably already ignored there.)
 
-## What's deliberately not here yet (see RAG.md)
+## Phase-3: evaluation
 
-- Hybrid retrieval (BM25 + semantic) and cross-encoder re-ranking — Phase-2
-- Citation *enforcement* (refuse to answer when chunks don't support a claim) — Phase-2
-- Golden eval set + `ragas` faithfulness scoring in CI — Phase-3
+`eval/golden_qa.json` + `eval/run_eval.py` run the golden Q&A set through the
+actual live pipeline (`rag_app.pipeline.run_query_for_eval` — same retrieval,
+re-ranking, generation, and enforcement code `/query` uses) and score two
+things:
+
+- **Coverage / decline accuracy** — did enforcement do the right thing?
+  Questions the docs *can* answer should get answered; the deliberately
+  out-of-scope questions should get declined. Checked directly, no LLM judge.
+- **Faithfulness** — for every answer that *was* accepted, does `ragas`'
+  `Faithfulness` metric (an LLM-as-judge check, reusing your Groq LLM as the
+  judge) agree the claims are actually supported by the retrieved chunks?
+  Declined answers are excluded on purpose — there's nothing to check
+  faithfulness on if nothing was claimed.
+
+Run it locally:
+```bash
+pip install -r backend-requirements.txt -r eval-requirements.txt
+python eval/run_eval.py                       # default threshold: 0.7
+python eval/run_eval.py --threshold 0.8        # stricter
+```
+Exits `0` (pass) or `1` (fail) — that's what lets `.github/workflows/eval.yml`
+gate a PR on it.
+
+**Important — `golden_qa.json` is a starter set, not the real thing.**
+It has 18 pairs; `RAG.md` calls for 50–200. The 18 here are grounded only in
+`RAG.md`'s own text (verifiable) plus 3 deliberate out-of-scope questions to
+exercise enforcement's decline path — none are drawn from `resume.pdf` or
+anything else in `data/`, since those need genuine manual verification
+against your actual source documents, which is the whole point of a *golden*
+set. Add real pairs following the same shape:
+```json
+{
+  "id": "qa-019",
+  "question": "...",
+  "ground_truth": "...",
+  "expect_answerable": true,
+  "source": "resume.pdf"
+}
+```
+`ground_truth` isn't used by the faithfulness metric itself (that only needs
+`question` + `answer` + retrieved `contexts`), but keeping it lets you
+eyeball whether the pipeline's actual answer matches what you expect, and
+sets you up for additional `ragas` metrics later (e.g. `answer_correctness`)
+that do use it.
+
+**CI setup:** add a `GROQ_API_KEY` repository secret (Settings → Secrets and
+variables → Actions) — the workflow needs it both to populate the vector
+store's answers and as the judge LLM for faithfulness scoring. The workflow
+also assumes `data/` is committed to the repo, since a fresh CI checkout has
+no pre-existing `chroma_db/` (that's gitignored) and re-ingests from `data/`
+on every run.
+
+## A second dependency pin worth knowing about
+
+`eval-requirements.txt` pins `ragas==0.3.9`. Newer `ragas` releases hard-import
+a class that's been removed from current `langchain-community` — another
+known, currently-open upstream bug
+([ragas#2745](https://github.com/vibrantlabsai/ragas/issues/2745)), same
+kind of issue as the `langchain-community<0.4` pin above. Both pins together
+are the combination actually verified to work.

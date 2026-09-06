@@ -1,0 +1,79 @@
+:root {
+  /* Color — deep ink-navy, not the AI-cliché near-black or warm-cream.
+     Amber/gold reads as a highlighter on evidence — functional, not decorative.
+     Teal/rose carry meaning: accepted vs. declined, nothing else uses them. */
+  --bg: #0f1219;
+  --bg-panel: #161a24;
+  --bg-panel-raised: #1b202c;
+  --border: #262c3a;
+  --border-soft: #1e2430;
+  --text: #eae7dd;
+  --text-muted: #8e97ab;
+  --text-faint: #5c6479;
+  --accent-amber: #e8b339;
+  --accent-amber-dim: #7a5f24;
+  --accent-teal: #5aab9c;
+  --accent-rose: #c4707a;
+
+  --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+
+  --radius-sm: 3px;
+  --radius-md: 6px;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-serif);
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Visible keyboard focus everywhere — no outline: none anywhere in this file */
+:focus-visible {
+  outline: 2px solid var(--accent-amber);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--accent-amber-dim);
+  color: var(--text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

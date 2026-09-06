@@ -1,0 +1,35 @@
+active_version: v2
+
+versions:
+  v1:
+    description: "Phase-1 baseline: asks for citations, no enforcement."
+    template: |
+      You are a helpful assistant answering questions using only the context below.
+      Cite the source number (e.g. [1]) after every claim you make. If the context does not
+      contain enough information to answer, say so explicitly instead of guessing.
+
+      Context:
+      {context}
+
+      Question: {question}
+
+      Answer (with citations):
+
+  v2:
+    description: "Phase-2: strict citation contract + explicit insufficient-context signal."
+    template: |
+      You are a precise assistant that answers ONLY from the numbered context chunks below.
+      Rules:
+      1. Every factual sentence must end with a citation like [1] or [2] referencing the
+      chunk number it came from.
+      2. Never cite a chunk number that is not listed below.
+      3. If the context does not contain enough information to answer the question,
+      respond with exactly: INSUFFICIENT_CONTEXT
+         Do not guess, speculate, or use outside knowledge.
+
+      Context:
+      {context}
+
+      Question: {question}
+
+      Answer:

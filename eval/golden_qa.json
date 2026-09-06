@@ -1,0 +1,128 @@
+[
+  {
+    "id": "qa-001",
+    "question": "What are the three phases of the RAG pipeline described in the project plan?",
+    "ground_truth": "Phase-1 covers ingestion, chunking, vector storage, and cited retrieval. Phase-2 adds hybrid retrieval, cross-encoder re-ranking, citation enforcement, and versioned prompts. Phase-3 adds a golden evaluation dataset, offline faithfulness scoring, and CI integration.",
+    "expect_answerable": true,
+    "source": "RAG.md"
+  },
+  {
+    "id": "qa-002",
+    "question": "What chunk size and overlap does Phase-1 use when splitting documents?",
+    "ground_truth": "Chunks of 500 to 800 tokens, with 100 tokens of overlap between consecutive chunks.",
+    "expect_answerable": true,
+    "source": "RAG.md"
+  },
+  {
+    "id": "qa-003",
+    "question": "Which document types does Phase-1 ingest?",
+    "ground_truth": "PDFs, Markdown files, and webpages.",
+    "expect_answerable": true,
+    "source": "RAG.md"
+  },
+  {
+    "id": "qa-004",
+    "question": "What does the Phase-1 retrieval pipeline do with the top-K chunks it pulls for a query?",
+    "ground_truth": "It uses them to generate an answer that cites where the information came from.",
+    "expect_answerable": true,
+    "source": "RAG.md"
+  },
+  {
+    "id": "qa-005",
+    "question": "Which orchestration tools are suggested for Phase-1?",
+    "ground_truth": "LangChain and LangGraph.",
+    "expect_answerable": true,
+    "source": "RAG.md"
+  },
+  {
+    "id": "qa-006",
+    "question": "Which vector store options are suggested for Phase-1?",
+    "ground_truth": "ChromaDB and Weaviate.",
+    "expect_answerable": true,
+    "source": "RAG.md"
+  },
+  {
+    "id": "qa-007",
+    "question": "What two retrieval methods does Phase-2's hybrid retrieval combine?",
+    "ground_truth": "Traditional BM25 keyword search combined with vector-based semantic search.",
+    "expect_answerable": true,
+    "source": "RAG.md"
+  },
+  {
+    "id": "qa-008",
+    "question": "What does the Phase-2 cross-encoder re-ranker do to the initially retrieved chunks?",
+    "ground_truth": "It re-scores them using a model that evaluates the query and each chunk together as a pair.",
+    "expect_answerable": true,
+    "source": "RAG.md"
+  },
+  {
+    "id": "qa-009",
+    "question": "What is citation enforcement, as defined in Phase-2?",
+    "ground_truth": "The system should explicitly decline to answer if the retrieved chunks do not support a specific response.",
+    "expect_answerable": true,
+    "source": "RAG.md"
+  },
+  {
+    "id": "qa-010",
+    "question": "Where should prompts be stored according to Phase-2?",
+    "ground_truth": "In version-controlled config files, rather than hardcoded in application code.",
+    "expect_answerable": true,
+    "source": "RAG.md"
+  },
+  {
+    "id": "qa-011",
+    "question": "Which tools are suggested for re-ranking in Phase-2?",
+    "ground_truth": "Cohere and SBERT.",
+    "expect_answerable": true,
+    "source": "RAG.md"
+  },
+  {
+    "id": "qa-012",
+    "question": "How large should the golden evaluation dataset be, per Phase-3?",
+    "ground_truth": "Around 50 to 200 manually verified question-and-answer pairs.",
+    "expect_answerable": true,
+    "source": "RAG.md"
+  },
+  {
+    "id": "qa-013",
+    "question": "What does the Phase-3 offline evaluation script measure?",
+    "ground_truth": "Faithfulness — whether the claims in the generated answer are actually supported by the retrieved chunks.",
+    "expect_answerable": true,
+    "source": "RAG.md"
+  },
+  {
+    "id": "qa-014",
+    "question": "What happens in the CI pipeline if quality drops below the threshold, per Phase-3?",
+    "ground_truth": "The build fails.",
+    "expect_answerable": true,
+    "source": "RAG.md"
+  },
+  {
+    "id": "qa-015",
+    "question": "Which evaluation framework does Phase-3 use?",
+    "ground_truth": "ragas.",
+    "expect_answerable": true,
+    "source": "RAG.md"
+  },
+  {
+    "id": "qa-016",
+    "question": "What is the capital of Mongolia?",
+    "ground_truth": null,
+    "expect_answerable": false,
+    "source": "out-of-scope test — not covered by any ingested document"
+  },
+  {
+    "id": "qa-017",
+    "question": "What is the boiling point of mercury at sea level?",
+    "ground_truth": null,
+    "expect_answerable": false,
+    "source": "out-of-scope test — not covered by any ingested document"
+  },
+  {
+    "id": "qa-018",
+    "question": "Who won the 2018 FIFA World Cup?",
+    "ground_truth": null,
+    "expect_answerable": false,
+    "source": "out-of-scope test — not covered by any ingested document"
+  }
+]
