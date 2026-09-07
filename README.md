@@ -245,3 +245,6 @@ known, currently-open upstream bug
 ([ragas#2745](https://github.com/vibrantlabsai/ragas/issues/2745)), same
 kind of issue as the `langchain-community<0.4` pin above. Both pins together
 are the combination actually verified to work.
+
+
+<!-- CI test -->
