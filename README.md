@@ -1,14 +1,5 @@
 # RAG
 
-# RAG API (Phase-1 + 2 + 3) — Backend
-
-The notebook pipeline, restructured as a FastAPI service so a React/Vite frontend
-(or anything else) can call it over HTTP instead of running cells by hand.
-
-This lives directly in your `RAG/` project root, alongside `notebook_demo/` and
-`data/` — not nested in its own subfolder — so it shares `data/` with the
-notebook with no path juggling.
-
 ## Layout
 
 ```
