@@ -38,6 +38,7 @@ RAG/
 │                               # the notebook's requirements.txt on purpose
 ├── eval-requirements.txt       # ragas, for running eval/run_eval.py
 ├── Dockerfile
+├── docker-entrypoint.sh        # auto-ingests from data/ on every container startup
 ├── .env.example
 ├── pyproject.toml              # makes `rag_app` pip-installable (pip install -e .)
 ├── README_BACKEND.md           # this file — named to not clobber your existing README.md
@@ -148,12 +149,23 @@ Build and run from `RAG/` root (the Dockerfile expects that as its build context
 
 ```bash
 docker build -t rag-api .
-docker run -p 8000:8000 --env-file .env -v $(pwd)/data:/app/data rag-api
+docker run -p 8000:8000 --env-file .env rag-api
 ```
 
-`data/` is mounted as a volume rather than baked into the image at build time
-— it's your knowledge base and changes independently of the code, so you
-don't need to rebuild the image every time you add a document.
+No volume mount for `data/` anymore — it's baked into the image at build
+time, and the container **automatically re-ingests on every startup** (see
+`docker-entrypoint.sh`) before it starts serving requests. That's a
+deliberate choice for Render's free tier specifically: it has no persistent
+disk, so every cold-start restart after idle begins with a completely empty
+filesystem — a manual `POST /ingest` step would mean the first visitor after
+any idle period hits an empty vector store and gets every question declined.
+Auto-ingesting on boot means it's always populated before it's reachable at
+all, at the cost of a slower startup: expect **1-3 minutes** on a cold start,
+not the ~30s you'd see from a typical stateless API, since it's downloading
+the embedding + cross-encoder models from HuggingFace *and* re-embedding
+every document *and* rebuilding the BM25 index before the health check
+passes. Rebuilding the image is required to pick up new documents in
+`data/`, since it's no longer a live-mounted folder.
 
 ## A dependency pin worth knowing about
 

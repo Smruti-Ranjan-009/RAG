@@ -11,14 +11,21 @@ COPY backend-requirements.txt .
 RUN pip install --no-cache-dir -r backend-requirements.txt
 
 COPY rag_app ./rag_app
+COPY data ./data
 
-# data/ is NOT baked into the image — it's your knowledge base, not code. Mount
-# it at runtime instead (build + run both from the RAG/ project root):
-#   docker build -t rag-api .
-#   docker run -p 8000:8000 --env-file .env -v $(pwd)/data:/app/data rag-api
+# Render's free tier has no persistent disk — every cold-start restart (after
+# 15 min idle) begins with a completely fresh container, so anything written
+# to disk during a previous run (the vector store) is gone. That's why data/
+# IS baked into the image here (unlike an earlier version of this Dockerfile,
+# which mounted it as a volume for local Docker runs where a fresh vectorstore
+# every restart isn't the norm), and why ingestion runs automatically on every
+# boot below instead of waiting for a manual POST /ingest call nobody's there
+# to make right after a cold start.
+COPY docker-entrypoint.sh .
+RUN chmod +x docker-entrypoint.sh
 
 # GROQ_API_KEY etc. are injected at runtime (docker run -e / docker-compose / Render env vars),
 # never baked into the image.
 EXPOSE 8000
 
-CMD ["uvicorn", "rag_app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+ENTRYPOINT ["./docker-entrypoint.sh"]
