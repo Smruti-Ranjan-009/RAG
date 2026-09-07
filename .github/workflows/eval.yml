@@ -1,8 +1,13 @@
 name: Phase-3 RAG Evaluation
 
-# Runs the golden Q&A set through the live pipeline on every PR and fails the
-# build if mean faithfulness drops below the threshold, per RAG.md's Phase-3
-# spec. Needs a GROQ_API_KEY repo secret (Settings → Secrets and variables →
+# Runs the golden Q&A set through the live pipeline on every PR targeting
+# main and fails the build if mean faithfulness drops below the threshold —
+# a pre-merge gate, per RAG.md's original Phase-3 spec. Pair this with a
+# branch protection rule (Settings → Branches → main → Require status checks
+# to pass before merging → select "Phase-3 RAG Evaluation / evaluate") if you
+# want it to actually BLOCK a bad PR from merging, not just report on it.
+#
+# Needs a GROQ_API_KEY repo secret (Settings → Secrets and variables →
 # Actions) — used both to populate the vector store's answers and as ragas'
 # judge LLM for faithfulness scoring.
 #
@@ -15,6 +20,14 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch: {}  # allows manually triggering a run from the Actions tab
+
+# Without this, pushing several commits to the same PR in quick succession
+# triggers several overlapping workflow runs, all sharing the same Groq API
+# key's rate limit budget at once -- one run's calls can eat into another's,
+# causing a 429 that has nothing to do with that run's own token usage.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   evaluate:
