@@ -20,6 +20,8 @@ def initialize_rails() -> None:
     guard_llm = ChatGroq(
         api_key=settings.GROQ_API_KEY,
         model="openai/gpt-oss-20b",
+        reasoning_format = "hidden",
+        reasoning_effort = "low",
         temperature=0
     )
 

@@ -9,6 +9,10 @@ from dotenv import load_dotenv
 load_dotenv()
 logfire.configure(token=os.getenv("LOGFIRE_TOKEN"))
 
+# import logging
+# logging.basicConfig(level=logging.INFO)
+# logging.getLogger("nemoguardrails").setLevel(logging.INFO)
+
 # Now safe to import app modules - logfire is already active
 from fastapi import FastAPI, Response
 from app.agents.graph import rag_agent
