@@ -6,6 +6,43 @@ and 60s cooldowns between experiments — calibrated for Groq's 6,000 TPM on_dem
 Contexts are truncated to 300 chars (2 chunks max) so no single request exceeds the limit.
 """
 
+# ── Compatibility shim ──────────────────────────────────────────────────
+# ragas (0.3.x and 0.4.x, including 0.4.3) unconditionally imports
+# langchain_community.chat_models.vertexai at import time (ragas/llms/base.py),
+# but langchain-community>=0.4.2 removed that module. This project only uses
+# Groq, so instead of downgrading langchain-community (which would fight your
+# langchain-core 1.6.3 / langchain 1.4.0 pins), we inject a stub so the import
+# succeeds harmlessly.
+import sys
+import types
+
+
+def _patch_ragas_vertexai_imports():
+    class _UnavailableVertexAI:
+        def __init__(self, *args, **kwargs):
+            raise ImportError(
+                "ChatVertexAI/VertexAI is unavailable in this environment "
+                "(langchain-community>=0.4.2 removed it) and is unused here."
+            )
+
+    chat_module_name = "langchain_community.chat_models.vertexai"
+    if chat_module_name not in sys.modules:
+        chat_stub = types.ModuleType(chat_module_name)
+        chat_stub.ChatVertexAI = _UnavailableVertexAI
+        sys.modules[chat_module_name] = chat_stub
+
+    # ragas/llms/base.py also does `from langchain_community.llms import VertexAI`
+    # right after — patch that too in case it's also missing in this version.
+    try:
+        import langchain_community.llms as _llms_module
+        if not hasattr(_llms_module, "VertexAI"):
+            _llms_module.VertexAI = _UnavailableVertexAI
+    except ImportError:
+        pass
+
+
+_patch_ragas_vertexai_imports()
+# ── End compatibility shim ──────────────────────────────────────────────
 
 import os
 import asyncio
@@ -26,7 +63,7 @@ from ragas.metrics.collections import (
 )
 
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
-JUDGE_MODEL = "llama-3.1-8b-instant"
+JUDGE_MODEL = "qwen/qwen3.8-27b"
 COOLDOWN_STANDARD = 62
 COOLDOWN_MINI = 40       # between individual samples — lets sliding TPM window recover (~2,800 tok/sample)
 GENERAL_BATCH_SIZE = 1  # one sample at a time: abatch_score fires calls concurrently per sample,
