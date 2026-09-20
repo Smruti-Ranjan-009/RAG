@@ -4,6 +4,14 @@ A production-style Retrieval-Augmented Generation system that combines a **LangG
 
 Built to explore how the pieces of a real enterprise RAG deployment (routing, safety, resilience, and evaluation) fit together, not just how to answer a question from a document.
 
+## Demo
+
+![App demo](docs/demo.gif)
+
+*A live query hitting the guardrails gate, then flowing through the planner → retriever → responder graph, with a formatted answer synthesized from indexed documentation.*
+
+📹 Full walkthroughs: [App demo (video)](#) · [Evaluation pipeline demo (video)](#)
+
 ## Highlights
 
 - **Agentic orchestration with LangGraph** — a stateful `planner → retriever → responder` graph that decides per-turn whether a query needs fresh document retrieval or can be answered conversationally from memory, with thread-based conversation memory via `MemorySaver`.
