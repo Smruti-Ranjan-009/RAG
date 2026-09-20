@@ -19,7 +19,7 @@ def initialize_rails() -> None:
 
     guard_llm = ChatGroq(
         api_key=settings.GROQ_API_KEY,
-        model="llama-prompt-guard-2-22m",
+        model="openai/gpt-oss-20b",
         temperature=0
     )
 
